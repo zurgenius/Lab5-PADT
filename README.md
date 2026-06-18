@@ -32,6 +32,7 @@
 Подробнее: [docs/iteration1_dsl_ast.md](docs/iteration1_dsl_ast.md).
 Оптимизатор: [docs/iteration2_optimizer.md](docs/iteration2_optimizer.md).
 Бэкенды: [docs/iteration3_backends.md](docs/iteration3_backends.md).
+Графический интерфейс: [docs/ui.md](docs/ui.md).
 
 ## Команды
 

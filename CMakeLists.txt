@@ -76,6 +76,29 @@ target_link_libraries(relalg_tests PRIVATE relalg_core relalg_warnings GTest::gt
 gtest_discover_tests(relalg_tests)
 
 if(WITH_RELALG_GUI)
+    set(RELALG_FONT_DIR "${CMAKE_BINARY_DIR}/assets")
+    set(RELALG_FONT_FILE "${RELALG_FONT_DIR}/NotoSans.ttf")
+    set(RELALG_FONT_SHA256 "bfb7bb691513f12e734dc346c03a03f784912432d7e3fa8e56efcf906fe86b3d")
+    file(MAKE_DIRECTORY "${RELALG_FONT_DIR}")
+    set(RELALG_CURRENT_FONT_SHA256 "")
+    if(EXISTS "${RELALG_FONT_FILE}")
+        file(SHA256 "${RELALG_FONT_FILE}" RELALG_CURRENT_FONT_SHA256)
+    endif()
+    if(NOT RELALG_CURRENT_FONT_SHA256 STREQUAL RELALG_FONT_SHA256)
+        file(DOWNLOAD
+            "https://raw.githubusercontent.com/google/fonts/b808e036c34e8ab3af706491032a9d528ecd4b86/ofl/notosans/NotoSans%5Bwdth%2Cwght%5D.ttf"
+            "${RELALG_FONT_FILE}"
+            EXPECTED_HASH SHA256=${RELALG_FONT_SHA256}
+            TLS_VERIFY ON
+            STATUS RELALG_FONT_DOWNLOAD_STATUS
+        )
+        list(GET RELALG_FONT_DOWNLOAD_STATUS 0 RELALG_FONT_DOWNLOAD_CODE)
+        list(GET RELALG_FONT_DOWNLOAD_STATUS 1 RELALG_FONT_DOWNLOAD_MESSAGE)
+        if(NOT RELALG_FONT_DOWNLOAD_CODE EQUAL 0)
+            message(FATAL_ERROR "Failed to download Noto Sans: ${RELALG_FONT_DOWNLOAD_MESSAGE}")
+        endif()
+    endif()
+
     FetchContent_Declare(
         glfw
         URL https://github.com/glfw/glfw/archive/refs/tags/3.3.9.zip
@@ -96,6 +119,9 @@ if(WITH_RELALG_GUI)
     target_include_directories(relalg_program PRIVATE
         ${imgui_SOURCE_DIR}
         ${imgui_SOURCE_DIR}/backends
+    )
+    target_compile_definitions(relalg_program PRIVATE
+        RELALG_FONT_PATH="${RELALG_FONT_FILE}"
     )
 
     target_sources(relalg_program PRIVATE

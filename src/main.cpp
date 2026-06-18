@@ -27,6 +27,7 @@ int main() {
 
 #include <cstdio>
 #include <exception>
+#include <filesystem>
 #include <string>
 
 namespace {
@@ -391,18 +392,12 @@ void glfwErrorCallback(int error, const char *description) {
 }
 
 void loadCyrillicFont(ImGuiIO &io) {
-#if defined(__APPLE__)
-  const char *font_path = "/System/Library/Fonts/Supplemental/Arial.ttf";
-#elif defined(_WIN32)
-  const char *font_path = "C:\\Windows\\Fonts\\arial.ttf";
-#else
-  const char *font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
-#endif
-  if (io.Fonts->AddFontFromFileTTF(font_path, 16.0F, nullptr,
-                                   io.Fonts->GetGlyphRangesCyrillic()) ==
-      nullptr) {
+  if (!std::filesystem::exists(RELALG_FONT_PATH)) {
     io.Fonts->AddFontDefault();
+    return;
   }
+  io.Fonts->AddFontFromFileTTF(RELALG_FONT_PATH, 16.0F, nullptr,
+                               io.Fonts->GetGlyphRangesCyrillic());
 }
 
 } // namespace
