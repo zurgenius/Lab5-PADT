@@ -1,0 +1,6 @@
+id,user_id,total,status
+101,1,120.50,paid
+102,1,45.00,new
+103,2,89.90,paid
+104,3,210.00,paid
+105,4,15.75,cancelled

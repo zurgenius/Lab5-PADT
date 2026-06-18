@@ -2,9 +2,13 @@ BUILD_DIR = build
 LINT_BUILD_DIR = build-lint
 FORMAT_FILES = $(shell find include src tests -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.tpp' \))
 
-.PHONY: all configure configure-gui configure-tests program run tests lint format clean
+.PHONY: all configure configure-gui configure-tests demo-data program run tests lint format clean
 
 all: program
+
+demo-data:
+	rm -f data/demo.sqlite3
+	sqlite3 data/demo.sqlite3 < data/demo_seed.sql
 
 configure:
 	cmake -S . -B $(BUILD_DIR)
@@ -15,7 +19,7 @@ configure-gui:
 configure-tests:
 	cmake -S . -B $(BUILD_DIR) -DWITH_RELALG_GUI=OFF
 
-program: configure-gui
+program: demo-data configure-gui
 	cmake --build $(BUILD_DIR) --target relalg_program
 	cp $(BUILD_DIR)/program program
 

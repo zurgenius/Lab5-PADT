@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(relational_algebra_lab LANGUAGES CXX)
 
 include(FetchContent)
+find_package(SQLite3 REQUIRED)
 
 option(RELALG_ENABLE_WERROR "Treat warnings as errors" OFF)
 option(WITH_RELALG_GUI "Build Dear ImGui graphical demo" ON)
@@ -21,10 +22,30 @@ add_library(relalg_warnings INTERFACE)
 target_compile_options(relalg_warnings INTERFACE ${RELALG_WARNING_FLAGS})
 
 add_library(relalg_core STATIC
+    src/backend/csv/csv_backend.cpp
+    src/backend/csv/csv_parser.cpp
+    src/backend/predicate_evaluator.cpp
+    src/backend/query_result.cpp
+    src/backend/source_catalog.cpp
+    src/backend/sql/compiled_sql.cpp
+    src/backend/sql/sql_compiler.cpp
+    src/backend/sql/sqlite_backend.cpp
+    src/ast/nodes.cpp
+    src/ast/printers.cpp
+    src/ast/relational_expr.cpp
+    src/common/sequence_utils.cpp
+    src/common/table_source.cpp
+    src/dsl/predicate.cpp
+    src/dsl/query.cpp
+    src/query_optimizer/query_optimizer.cpp
     src/utils.cpp
+    src/visitor/expr_utils.cpp
 )
 target_include_directories(relalg_core PUBLIC include include/core)
-target_link_libraries(relalg_core PUBLIC relalg_warnings)
+target_link_libraries(relalg_core PUBLIC relalg_warnings SQLite::SQLite3)
+target_compile_definitions(relalg_core PUBLIC
+    RELALG_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data"
+)
 
 add_executable(relalg_program src/main.cpp)
 set_target_properties(relalg_program PROPERTIES OUTPUT_NAME program)
@@ -45,6 +66,8 @@ include(GoogleTest)
 add_executable(relalg_tests
     tests/ast_tests.cpp
     tests/core_tests.cpp
+    tests/optimizer_tests.cpp
+    tests/backend_tests.cpp
     tests/stream_tests.cpp
 )
 set_target_properties(relalg_tests PROPERTIES OUTPUT_NAME tests_runner)
