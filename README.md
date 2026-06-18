@@ -1,11 +1,34 @@
-# Relational Algebra Project Skeleton
+# Relational Algebra Lab
 
-"Оптимизация запросов на реляционной алгебре".
+Лабораторная работа по реализации DSL, AST, оптимизации и backend-перевода запросов реляционной алгебры.
 
-Сборка:
+## Текущий статус
+
+Реализована первая итерация:
+
+- чистый AST реляционной алгебры;
+- C++ DSL с функциональным и pipe-синтаксисом;
+- visitor-принтеры для AST и RA-нотации;
+- графическое demo на Dear ImGui;
+- тесты AST/DSL и существующих core/stream модулей.
+
+Основные заголовки разложены по `include/ast`, `include/dsl` и `include/common`; в `src` остаются только `main.cpp` и `utils.cpp`.
+
+Подробнее: [docs/iteration1_dsl_ast.md](docs/iteration1_dsl_ast.md).
+
+## Команды
+
+```bash
+make program
+make run
+make tests
+make lint
+```
+
+Ручная сборка:
 
 ```bash
 cmake -S . -B build
-cmake --build build
-./build/relalg_demo
+cmake --build build --target relalg_program
+./build/program
 ```
