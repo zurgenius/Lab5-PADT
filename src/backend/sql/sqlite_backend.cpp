@@ -2,10 +2,15 @@
 
 #include <sqlite3.h>
 
+#include <memory>
 #include <stdexcept>
 
 namespace ra {
 namespace {
+
+using DatabaseHandle = std::unique_ptr<sqlite3, decltype(&sqlite3_close)>;
+using StatementHandle =
+    std::unique_ptr<sqlite3_stmt, decltype(&sqlite3_finalize)>;
 
 std::string databasePath(const SourceCatalog &catalog) {
   std::string path;
@@ -68,53 +73,46 @@ SQLiteBackend::SQLiteBackend(const SourceCatalog &catalog)
 SqlExecutionResult SQLiteBackend::execute(const ExprPtr &expr) const {
   SqlCompiler compiler(catalog_);
   const CompiledSql sql = compiler.compile(expr);
-  sqlite3 *database = nullptr;
+  sqlite3 *raw_database = nullptr;
   const int open_code = sqlite3_open_v2(
-      databasePath(catalog_).c_str(), &database, SQLITE_OPEN_READONLY, nullptr);
+      databasePath(catalog_).c_str(), &raw_database, SQLITE_OPEN_READONLY,
+      nullptr);
+  DatabaseHandle database(raw_database, &sqlite3_close);
   if (open_code != SQLITE_OK) {
     const std::string message =
-        database == nullptr ? "unknown SQLite error" : sqlite3_errmsg(database);
-    if (database != nullptr) {
-      sqlite3_close(database);
-    }
+        raw_database == nullptr ? "unknown SQLite error"
+                                : sqlite3_errmsg(raw_database);
     throw std::runtime_error("Cannot open SQLite database: " + message);
   }
 
-  sqlite3_stmt *statement = nullptr;
-  try {
-    checkSqlite(sqlite3_prepare_v2(database, sql.text().c_str(), -1, &statement,
-                                   nullptr),
-                database, "Cannot prepare SQL");
-    bindParameters(statement, sql.parameters(), database);
+  sqlite3_stmt *raw_statement = nullptr;
+  checkSqlite(sqlite3_prepare_v2(database.get(), sql.text().c_str(), -1,
+                                 &raw_statement, nullptr),
+              database.get(), "Cannot prepare SQL");
+  StatementHandle statement(raw_statement, &sqlite3_finalize);
+  bindParameters(statement.get(), sql.parameters(), database.get());
 
-    QueryResult result(sql.schema());
-    int step_code = SQLITE_ROW;
-    while ((step_code = sqlite3_step(statement)) == SQLITE_ROW) {
-      Row row;
-      for (int column = 0; column < sqlite3_column_count(statement); column++) {
-        if (sqlite3_column_type(statement, column) == SQLITE_NULL) {
-          row.append(Cell::null());
-        } else {
-          const unsigned char *text = sqlite3_column_text(statement, column);
-          row.append(Cell(reinterpret_cast<const char *>(text)));
-        }
+  QueryResult result(sql.schema());
+  int step_code = SQLITE_ROW;
+  while ((step_code = sqlite3_step(statement.get())) == SQLITE_ROW) {
+    Row row;
+    for (int column = 0; column < sqlite3_column_count(statement.get());
+         column++) {
+      if (sqlite3_column_type(statement.get(), column) == SQLITE_NULL) {
+        row.append(Cell::null());
+      } else {
+        const unsigned char *text =
+            sqlite3_column_text(statement.get(), column);
+        row.append(Cell(reinterpret_cast<const char *>(text)));
       }
-      result.append(row);
     }
-    if (step_code != SQLITE_DONE) {
-      throw std::runtime_error("Cannot execute SQL: " +
-                               std::string(sqlite3_errmsg(database)));
-    }
-    sqlite3_finalize(statement);
-    sqlite3_close(database);
-    return SqlExecutionResult(sql, result);
-  } catch (...) {
-    if (statement != nullptr) {
-      sqlite3_finalize(statement);
-    }
-    sqlite3_close(database);
-    throw;
+    result.append(row);
   }
+  if (step_code != SQLITE_DONE) {
+    throw std::runtime_error("Cannot execute SQL: " +
+                             std::string(sqlite3_errmsg(database.get())));
+  }
+  return SqlExecutionResult(sql, result);
 }
 
 } // namespace ra

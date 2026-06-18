@@ -3,6 +3,7 @@
 #include "common/sequence_utils.h"
 #include "core/option.h"
 
+#include <memory>
 #include <string>
 
 namespace ra {
@@ -37,7 +38,7 @@ public:
                             const std::string &column) const;
 
 private:
-  MutableArraySequence<Cell> cells_;
+  std::unique_ptr<MutableArraySequence<Cell>> cells_;
 };
 
 class QueryResult {

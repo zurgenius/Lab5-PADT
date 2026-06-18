@@ -2,6 +2,7 @@
 
 #include "common/sequence_utils.h"
 
+#include <memory>
 #include <string>
 
 namespace ra {
@@ -28,7 +29,7 @@ private:
   std::string name_;
   std::string location_;
   std::string physical_name_;
-  MutableArraySequence<std::string> schema_;
+  std::unique_ptr<MutableArraySequence<std::string>> schema_;
 };
 
 class SourceCatalog {

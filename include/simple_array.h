@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <initializer_list>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -28,15 +29,12 @@ public:
         size_ = other.size_;
     }
 
-    SimpleArray(SimpleArray&& other) noexcept : data_(other.data_), size_(other.size_), capacity_(other.capacity_) {
-        other.data_ = nullptr;
+    SimpleArray(SimpleArray&& other) noexcept : data_(std::move(other.data_)), size_(other.size_), capacity_(other.capacity_) {
         other.size_ = 0;
         other.capacity_ = 0;
     }
 
-    ~SimpleArray() {
-        delete[] data_;
-    }
+    ~SimpleArray() = default;
 
     SimpleArray& operator=(const SimpleArray& other) {
         if (this == &other) {
@@ -53,12 +51,10 @@ public:
             return *this;
         }
 
-        delete[] data_;
-        data_ = other.data_;
+        data_ = std::move(other.data_);
         size_ = other.size_;
         capacity_ = other.capacity_;
 
-        other.data_ = nullptr;
         other.size_ = 0;
         other.capacity_ = 0;
         return *this;
@@ -69,13 +65,12 @@ public:
             return;
         }
 
-        T* new_data = new T[new_capacity];
+        auto new_data = std::make_unique<T[]>(new_capacity);
         for (std::size_t index = 0; index < size_; ++index) {
             new_data[index] = std::move(data_[index]);
         }
 
-        delete[] data_;
-        data_ = new_data;
+        data_ = std::move(new_data);
         capacity_ = new_capacity;
     }
 
@@ -142,10 +137,7 @@ public:
     }
 
     void swap(SimpleArray& other) noexcept {
-        T* temp_data = data_;
-        data_ = other.data_;
-        other.data_ = temp_data;
-
+        std::swap(data_, other.data_);
         std::size_t temp_size = size_;
         size_ = other.size_;
         other.size_ = temp_size;
@@ -165,7 +157,7 @@ private:
         reserve(new_capacity);
     }
 
-    T* data_;
+    std::unique_ptr<T[]> data_;
     std::size_t size_;
     std::size_t capacity_;
 };
